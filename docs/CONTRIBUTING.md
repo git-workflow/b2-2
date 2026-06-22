@@ -11,27 +11,29 @@ GitHub Flow를 선택한 이유:
 
 ## 브랜치 네이밍 규칙
 
-feature/<이름>-<주제>
+feature/<이슈번호>-<작업내용>
 
 예시
-feature/changbum-contributing
-feature/changbum-troubleshooting
+docs/3-git-study
+docs/7-add-git-note
+feature/12-login-api
+fix/15-validation-error
 
 ## 커밋 메시지 규칙
 
-feat:
-fix:
-docs:
-refactor:
-chore:
+feat: 새로운 기능
+fix: 버그 수정
+docs: 문서 수정
+refactor: 리팩토링
+chore: 기타 작업
 
 예시
 docs: add contributing guide
 feat: add math utility function
+fix: resolve login validation error
 
 금지
 update
-fix
 temp
 wip
 final
