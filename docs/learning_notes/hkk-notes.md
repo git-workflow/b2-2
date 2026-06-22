@@ -656,6 +656,276 @@ feature 브랜치에서 작업 → push → PR 생성 → 리뷰 승인 → Merg
 
 ---
 
+## 11. (보너스) `git rebase -i`로 히스토리 정리
+
+### 11.1 `git rebase -i`란?
+
+`git rebase -i`(Interactive Rebase)는 **커밋 히스토리를 깔끔하게 정리**할 수 있는 강력한 도구입니다. 여러 개의 커밋을 하나로 합치거나, 커밋 순서를 바꾸거나, 커밋 메시지를 수정할 수 있습니다.
+
+> [!IMPORTANT]
+> Interactive Rebase는 **커밋 히스토리를 변경**하므로, 반드시 **push 전 로컬에서만** 사용해야 합니다. 이미 원격에 push한 커밋을 rebase하면 팀원과의 히스토리 충돌이 발생합니다.
+
+### 11.2 기본 사용법
+
+```bash
+# 최근 3개 커밋을 대화형으로 정리
+git rebase -i HEAD~3
+```
+
+실행하면 에디터에 아래와 같은 화면이 나타납니다:
+
+```text
+pick a1b2c3d feat: add capitalize function
+pick d4e5f6g fix: handle empty string
+pick h7i8j9k docs: add docstring to capitalize
+
+# Commands:
+# p, pick   = 커밋을 그대로 사용
+# r, reword = 커밋 메시지만 수정
+# e, edit   = 커밋을 수정 (코드 변경 가능)
+# s, squash = 이전 커밋과 합치기 (메시지 합침)
+# f, fixup  = 이전 커밋과 합치기 (이 커밋의 메시지 버림)
+# d, drop   = 커밋 삭제
+```
+
+### 11.3 주요 액션 상세 설명
+
+| 액션 | 설명 | 사용 예시 |
+|---|---|---|
+| `pick` | 커밋을 그대로 유지 | 변경 없이 사용할 커밋 |
+| `reword` | 커밋 메시지만 수정 | 오타 수정, 메시지 개선 |
+| `squash` | 바로 위 커밋과 합치기 (메시지 합산) | 관련된 여러 커밋을 하나로 |
+| `fixup` | 바로 위 커밋과 합치기 (이 메시지 버림) | 사소한 수정 커밋 정리 |
+| `drop` | 커밋 삭제 | 불필요한 커밋 제거 |
+
+### 11.4 실전 예시: Squash로 커밋 합치기
+
+**정리 전 히스토리:**
+```text
+h7i8j9k docs: add docstring to capitalize
+d4e5f6g fix: handle empty string
+a1b2c3d feat: add capitalize function
+```
+
+이 3개 커밋은 모두 "capitalize 기능 추가"라는 하나의 논리적 단위이므로 하나로 합칩니다.
+
+**Step 1:** `git rebase -i HEAD~3` 실행
+
+**Step 2:** 에디터에서 아래와 같이 수정
+
+```text
+pick a1b2c3d feat: add capitalize function
+squash d4e5f6g fix: handle empty string
+squash h7i8j9k docs: add docstring to capitalize
+```
+
+**Step 3:** 저장하면 커밋 메시지 편집 화면이 나타납니다. 합쳐진 메시지를 정리합니다:
+
+```text
+feat: add capitalize function with error handling
+
+- capitalize_words() 함수 구현
+- 빈 문자열 예외 처리 추가
+- docstring 추가
+```
+
+**정리 후 히스토리:**
+```text
+x9y8z7w feat: add capitalize function with error handling
+```
+
+### 11.5 보너스 과제 수행 절차
+
+과제에서 요구하는 **전/후 비교 문서** 작성 절차:
+
+```bash
+# 1. rebase 전 히스토리 저장
+git log --oneline -n 10 > docs/rebase-before.txt
+
+# 2. interactive rebase 수행
+git rebase -i HEAD~3    # 정리할 커밋 수에 맞게 조정
+
+# 3. rebase 후 히스토리 저장
+git log --oneline -n 10 > docs/rebase-after.txt
+```
+
+**전/후 비교 문서 예시 (`docs/rebase-history.md`):**
+
+```markdown
+# Git Rebase -i 히스토리 정리 기록
+
+## 정리 전 (Before)
+\```text
+h7i8j9k docs: add docstring to capitalize
+d4e5f6g fix: handle empty string
+a1b2c3d feat: add capitalize function
+9z8y7x6 chore: initial project setup
+\```
+
+## 수행한 작업
+- `squash`로 3개의 관련 커밋을 1개로 합침
+- 커밋 메시지를 기능 단위로 재작성
+
+## 정리 후 (After)
+\```text
+x9y8z7w feat: add capitalize function with error handling
+9z8y7x6 chore: initial project setup
+\```
+
+## 배운 점
+- 작은 커밋들을 논리적 단위로 합치면 히스토리가 깔끔해진다.
+- rebase는 히스토리를 변경하므로 push 전에만 사용해야 한다.
+```
+
+> [!WARNING]
+> `git rebase -i` 도중 문제가 생기면 `git rebase --abort`로 안전하게 취소할 수 있습니다.
+
+---
+
+## 12. (보너스) `.github/CODEOWNERS` 설정
+
+### 12.1 CODEOWNERS란?
+
+CODEOWNERS는 **특정 파일/디렉토리에 대한 코드 소유자를 지정**하는 파일입니다. PR이 생성되면 해당 파일의 소유자가 **자동으로 리뷰어로 지정**됩니다.
+
+**장점:**
+- 누가 어떤 코드를 담당하는지 명확하게 관리
+- PR 생성 시 리뷰어를 수동으로 지정하는 번거로움 제거
+- 코드 품질 관리의 체계화
+
+### 12.2 파일 위치
+
+```text
+프로젝트 루트/
+└── .github/
+    └── CODEOWNERS
+```
+
+### 12.3 CODEOWNERS 문법
+
+```text
+# 기본 형식: <패턴>  <소유자1> <소유자2> ...
+
+# 전체 저장소의 기본 소유자
+*                    @team-lead
+
+# 특정 디렉토리 담당
+/src/math_utils/     @kim
+/src/string_utils/   @park
+/src/file_utils/     @lee
+
+# 특정 파일 담당
+/docs/CONTRIBUTING.md  @kim @park
+
+# 특정 확장자 담당
+*.md                   @docs-team
+
+# 특정 디렉토리의 모든 하위 파일
+/tests/**              @qa-team
+```
+
+### 12.4 패턴 매칭 규칙
+
+| 패턴 | 매칭 대상 | 설명 |
+|---|---|---|
+| `*` | 모든 파일 | 기본 소유자 지정 |
+| `/src/` | src 디렉토리 전체 | 슬래시로 시작하면 루트 기준 |
+| `*.py` | 모든 Python 파일 | 확장자 기준 매칭 |
+| `/docs/**` | docs 하위 모든 파일 | 재귀적 매칭 |
+| `/src/utils.py` | 특정 파일 하나 | 정확한 경로 매칭 |
+
+> [!NOTE]
+> **우선순위:** 파일에서 더 아래에 있는 규칙이 우선합니다. 즉, 마지막에 매칭되는 규칙이 최종 소유자가 됩니다.
+
+### 12.5 실전 설정 예시 (과제 기준)
+
+팀원이 3명(김, 박, 이)인 경우:
+
+```text
+# .github/CODEOWNERS
+
+# 기본 리뷰어 — 모든 PR에 대해 팀 리드가 리뷰
+*                         @team-repo-owner
+
+# 각 팀원이 담당하는 소스 코드 영역
+/src/math_utils.py        @kim-github-id
+/src/string_utils.py      @park-github-id
+/src/file_utils.py        @lee-github-id
+
+# 문서는 모든 팀원이 공동 소유
+/docs/                    @kim-github-id @park-github-id @lee-github-id
+
+# 팀 설정 파일은 본인만 수정
+/team/kim.md              @kim-github-id
+/team/park.md             @park-github-id
+/team/lee.md              @lee-github-id
+```
+
+### 12.6 CODEOWNERS 설정 절차
+
+```bash
+# 1. .github 디렉토리 생성
+mkdir -p .github
+
+# 2. CODEOWNERS 파일 생성
+touch .github/CODEOWNERS
+
+# 3. 내용 작성 (위의 예시 참고)
+# 에디터로 .github/CODEOWNERS 편집
+
+# 4. 커밋 및 push
+git add .github/CODEOWNERS
+git commit -m "chore: add CODEOWNERS for auto reviewer assignment"
+git push origin main    # 또는 PR을 통해 병합
+```
+
+> [!TIP]
+> CODEOWNERS가 올바르게 작동하려면 **Branch Protection Rule**에서 **"Require review from Code Owners"** 옵션을 활성화해야 합니다.
+> - Settings → Branches → main 보호 규칙에서 체크
+
+---
+
+## 13. 과제 수행 체크리스트
+
+### Phase 1: 준비 (팀 전원 함께)
+- [ ] GitHub Organization 또는 Collaborator 방식으로 저장소 생성
+- [ ] 기본 디렉토리 구조 생성 (`README.md`, `docs/`, `src/`, `team/`)
+- [ ] Branch Protection Rule 설정 (main 브랜치)
+- [ ] 간단한 결과물 유형 선택 (A/B/C 중 택 1)
+- [ ] `docs/CONTRIBUTING.md` 초안 작성 (브랜치 규칙, 커밋 컨벤션, PR 규칙, 리뷰 규칙, 충돌 대응)
+
+### Phase 2: 작업 수행 (팀원별 독립 작업)
+- [ ] 각자 Issue 생성 후 feature 브랜치에서 작업
+- [ ] 커밋 메시지 컨벤션 준수
+- [ ] PR 생성 시 본문에 What/Why/How + `Closes #이슈번호` 포함
+- [ ] 팀원별 PR 최소 2개 생성 및 병합
+- [ ] 팀원별 코드 리뷰 최소 2개 작성 (실질적 코멘트 포함)
+- [ ] 팀원별 리뷰 반영 경험 최소 1회
+
+### Phase 3: 충돌 해결 실습
+- [ ] 의도적 충돌 상황 최소 2회 생성 및 해결
+- [ ] 최소 1회는 비자명 충돌 (같은 hunk 수정 또는 파일 이동+내용 수정)
+- [ ] `docs/conflict-resolution.md`에 해결 과정 기록
+
+### Phase 4: 트러블슈팅 실습
+- [ ] `git commit --amend` 시나리오 수행 및 기록
+- [ ] `git reset --soft HEAD~1` 시나리오 수행 및 기록
+- [ ] `git revert` 시나리오 수행 및 기록
+- [ ] `git stash` / `git stash pop` 시나리오 수행 및 기록
+- [ ] 각 팀원이 최소 1개 시나리오 기록에 참여 (이름 명시)
+- [ ] `docs/troubleshooting-log.md`에 전부 기록
+
+### Phase 5: 제출 준비
+- [ ] `SUBMISSION.md` 작성 (팀원별 PR/Issue/문서 링크 정리)
+- [ ] `git log --oneline --graph --all` 결과 캡처 또는 텍스트 저장
+- [ ] 모든 문서 최종 점검 (CONTRIBUTING, conflict-resolution, troubleshooting-log)
+
+### (선택) 보너스
+- [ ] `git rebase -i`로 히스토리 정리 + 전/후 비교 문서
+- [ ] `.github/CODEOWNERS` 설정
+
+---
+
 > [!NOTE]
 > **이 가이드를 활용하는 팁:**
 > - 과제 수행 전에 한 번 전체를 읽어보세요.
