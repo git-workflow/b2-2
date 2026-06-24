@@ -44,6 +44,120 @@ b553fc1 (HEAD -> docs/13-amend-troubleshooting) docs: add amend troubleshooting 
 
 ![git commit amend troubleshooting](../images/troubleshooting-a/toubleshooting.png)
 
+## 시나리오: `git reset --soft HEAD~1`
+
+* 작업이 아직 다 안된 부분을 실수로 `git commit`을 한 경우 직전에 한 commit을 취소하고 싶은 상황입니다.
+
+### 왜 이 방법을 선택했는가
+
+* 아직 push를 하지 않은 상황에서 commit을 취소하려는 상황에서는 적절한 방법이 `git reset --soft HEAD~1`입니다.
+
+### 배운점
+#### HEAD란?
+
+`HEAD`는 **현재 체크아웃된 커밋을 가리키는 특수 포인터**입니다. 쉽게 말해 **"지금 내가 서 있는 위치"**를 의미합니다.
+
+- 일반적으로 `HEAD`는 현재 브랜치를 통해 **해당 브랜치의 최신 커밋**을 가리킵니다.
+- 예를 들어 `main` 브랜치에 있다면 `HEAD → main → 최신 커밋`의 구조입니다.
+
+```text
+HEAD → main → 커밋 E (최신)
+               ↑
+          A ── B ── C ── D ── E
+```
+
+#### HEAD~N 상대 참조
+
+`HEAD~N`은 HEAD로부터 **N번째 이전 커밋**을 가리키는 상대 참조 표기법입니다.
+
+| 표기 | 의미 |
+|---|---|
+| `HEAD` | 현재 커밋 (가장 최신) |
+| `HEAD~1` | 1개 전 커밋 (= 부모 커밋) |
+| `HEAD~2` | 2개 전 커밋 (= 부모의 부모) |
+| `HEAD~3` | 3개 전 커밋 |
+
+```text
+HEAD~3    HEAD~2    HEAD~1    HEAD
+  ↓         ↓         ↓       ↓
+  B ─────── C ─────── D ───── E
+```
+
+따라서 `git reset --soft HEAD~1`은 **"현재 위치(HEAD)에서 1개 전 커밋으로 되돌려라"**라는 의미입니다.
+
+> [!TIP]
+> `HEAD~1`은 `HEAD~`로 축약할 수도 있습니다. 숫자 1을 생략하면 기본값이 1입니다.
+
+**상황:** 방금 한 커밋을 취소하고 싶지만, 변경한 코드는 유지하고 싶을 때
+
+```bash
+git reset --soft HEAD~1
+```
+
+**실행 결과:**
+- 가장 최근 커밋 1개가 사라짐
+- 해당 커밋의 변경사항은 **Staging Area에 그대로 남아 있음**
+- 코드를 수정한 후 다시 커밋 가능
+
+**reset의 3가지 모드 비교:**
+
+| 모드 | 커밋 | Staging Area | Working Directory | 용도 |
+|---|---|---|---|---|
+| `--soft` | ❌ 취소 | ✅ 유지 | ✅ 유지 | 커밋만 취소, 코드 수정 후 다시 커밋 |
+| `--mixed` (기본값) | ❌ 취소 | ❌ 취소 | ✅ 유지 | 커밋 + 스테이징 취소, 다시 add부터 |
+| `--hard` | ❌ 취소 | ❌ 취소 | ❌ 삭제 | 모두 삭제 (⚠️ 복구 불가) |
+
+> [!CAUTION]
+> **`git reset`은 push 전에만 사용해야 합니다!** 이미 push한 커밋을 reset하면 원격 히스토리와 달라져서 문제가 생깁니다. push 후에는 `git revert`를 사용하세요.
+
+### 시도한 명령/절차
+
+#### `git commit` 전 `git log`
+```
+@hkk-cody ➜ /workspaces/b2-2 (docs/18-git-reset-troubleshooting) $ git log
+commit 4a543770925b1d02c773efd208ebeeacc80fdd4c (HEAD -> docs/18-git-reset-troubleshooting)
+Merge: efc8211 c5d5edb
+Author: hkk <hkkim0103@gmail.com>
+Date:   Wed Jun 24 07:09:04 2026 +0000
+
+    Merge branch 'main' of https://github.com/git-workflow/b2-2 into docs/18-git-reset-troubleshooting
+```
+
+#### `git commit` 및 이후 `git log`
+```
+@hkk-cody ➜ /workspaces/b2-2 (docs/18-git-reset-troubleshooting) $ git commit -m "docs: add scenario for git reset troubleshooting"
+[docs/18-git-reset-troubleshooting bdfc89a] docs: add scenario for git reset troubleshooting
+ 1 file changed, 3 insertions(+)
+@hkk-cody ➜ /workspaces/b2-2 (docs/18-git-reset-troubleshooting) $ git log
+commit bdfc89a3f6876faf40514971143c60ad040dd965 (HEAD -> docs/18-git-reset-troubleshooting)
+Author: hkk <hkkim0103@gmail.com>
+Date:   Wed Jun 24 07:18:38 2026 +0000
+
+    docs: add scenario for git reset troubleshooting
+
+commit 4a543770925b1d02c773efd208ebeeacc80fdd4c
+Merge: efc8211 c5d5edb
+Author: hkk <hkkim0103@gmail.com>
+Date:   Wed Jun 24 07:09:04 2026 +0000
+
+    Merge branch 'main' of https://github.com/git-workflow/b2-2 into docs/18-git-reset-troubleshooting
+```
+
+#### `git reset --soft HEAD~1` 후 `git log`
+```
+@hkk-cody ➜ /workspaces/b2-2 (docs/18-git-reset-troubleshooting) $ git reset --soft HEAD~1
+@hkk-cody ➜ /workspaces/b2-2 (docs/18-git-reset-troubleshooting) $ git log
+commit 4a543770925b1d02c773efd208ebeeacc80fdd4c (HEAD -> docs/18-git-reset-troubleshooting)
+Merge: efc8211 c5d5edb
+Author: hkk <hkkim0103@gmail.com>
+Date:   Wed Jun 24 07:09:04 2026 +0000
+
+    Merge branch 'main' of https://github.com/git-workflow/b2-2 into docs/18-git-reset-troubleshooting
+```
+
+### 결과
+* `git reset --soft HEAD~1`를 하면 HEAD를 한 커밋 뒤로 옮기므로 마지막 커밋이 취소되고 내용이 스테이징 영역으로 돌아옵니다.
+
 
 ## 시나리오: `git stash`, `git stash pop`
 
@@ -101,6 +215,4 @@ b553fc1 (HEAD -> docs/13-amend-troubleshooting) docs: add amend troubleshooting 
 * 작업물 유실 방지: 변경 사항을 그대로 둔 채 브랜치를 이동(switch)하면 파일 구조의 차이로 인해 작업물이 꼬이거나 날아갈 위험이 큼.
 
 * 결론: 미완성 작업을 가장 안전하게 캡슐화하여 보관했다가 꺼낼 수 있는 stash 방식이 최적이라고 판단. 특히 새로 생성된 문서를 함께 옮기기 위해 -u 옵션 사용이 필수적이었음.
-
-
 
