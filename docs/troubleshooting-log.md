@@ -43,3 +43,16 @@ b553fc1 (HEAD -> docs/13-amend-troubleshooting) docs: add amend troubleshooting 
 ### 실행 결과
 
 ![git commit amend troubleshooting](../images/troubleshooting-a/toubleshooting.png)
+
+
+
+
+## 시나리오: `git reset --soft HEAD~1`
+
+
+
+
+## 시나리오: `git revert`
+
+
+
