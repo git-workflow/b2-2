@@ -55,7 +55,12 @@ git rebase -i HEAD~2
 pick 94c8cad docs: add rebase history note
 squash 6df80e4 docs: update rebase history note
 ```
-
+#### 명령어
+```
+pick: 커밋을 그대로 유지
+reword: 커밋 메시지만 수정
+squash (또는 s): 해당 커밋을 이전 커밋과 하나로 합침
+```
 * 첫 번째 커밋은 유지하였다.
 * 두 번째 커밋을 첫 번째 커밋에 합쳤다.
 
