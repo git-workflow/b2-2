@@ -45,6 +45,118 @@ b553fc1 (HEAD -> docs/13-amend-troubleshooting) docs: add amend troubleshooting 
 ![git commit amend troubleshooting](../images/troubleshooting-a/toubleshooting.png)
 
 
+## 시나리오: `git revert`
+### 왜 이 방법을 선택했는가
+* 이미 원격에 push한 경우에는 `reset`을 하면 로컬과 원격 레포의 상태가 달라지는 문제가 생깁니다.
+* 그래서 이런 상황에는 `revert`를 사용하는게 알맞습니다.
+
+
+### 배운점
+#### `git revert` — 원격에 push된 커밋 되돌리기 (히스토리 보존)
+**상황:** 이미 원격에 push한 커밋을 되돌리되, 커밋 히스토리는 보존하고 싶을 때
+
+```bash
+# 특정 커밋을 되돌리는 새로운 커밋 생성
+git revert <커밋해시>
+
+# 예시
+git revert a1b2c3d
+# → 에디터가 열리면 revert 커밋 메시지 확인 후 저장
+
+git push origin main
+```
+
+**revert vs reset 핵심 차이:**
+
+```text
+[reset]  A ── B ── C  →  A ── B     (C를 삭제 — 히스토리 변조)
+[revert] A ── B ── C  →  A ── B ── C ── C'  (C를 되돌리는 새 커밋 C' 추가 — 히스토리 보존)
+```
+
+| 항목 | `reset` | `revert` |
+|---|---|---|
+| **히스토리** | 삭제 (변조됨) | 보존 (새 커밋 추가) |
+| **push 후 사용** | ❌ 위험 (금지) | ✅ 안전 |
+| **팀 협업** | 다른 팀원에게 영향 줌 | 영향 없음 |
+| **사용 시점** | 로컬에서만 | 언제든지 가능 |
+
+#### 중간 커밋을 revert할 때 주의사항
+
+**특정 상황:** 최신 커밋이 아닌 중간 커밋(예: B)을 revert해야 할 때
+
+```text
+초기 상태:
+A ── B ── C
+
+git revert B 실행 후:
+A ── B ── C ── B'
+     ↑        ↑
+  (원본)   (B의 변경사항 반대로 적용)
+```
+
+**구체적인 예시:**
+```text
+파일 변경 흐름:
+A:     file.txt = "hello"
+B:     file.txt = "hello world"  (B가 "world" 추가)
+C:     file.txt = "hello world!!" (C가 "!!" 추가)
+
+git revert B 후:
+B':    file.txt = "hello"  (B의 변경사항 제거)
+```
+
+**⚠️ 잠재적 문제: Conflict 발생 가능**
+
+| 경우 | 결과 |
+|---|---|
+| B와 C가 다른 부분 수정 | 충돌 없음 ✓ |
+| B와 C가 **같은 부분** 수정 | **CONFLICT 발생** ⚠️ |
+
+**예시 (충돌 발생):**
+```
+B가 line 3 수정: "A" → "B"
+C가 같은 line 3 수정: "B" → "C"
+git revert B하면: "C" → "A"로 변경하려 함
+→ 충돌 발생!
+```
+
+**결론:** 중간 커밋 revert도 가능하지만, 최신 커밋을 revert하는 것이 **가장 안전하고 충돌 위험이 적습니다.** 💡
+
+### 시도한 명령/절차
+#### git commit, push 까지 한 상황
+```
+@hkk-cody ➜ /workspaces/b2-2 (docs/19-git-revert-troubleshooting) $ git push origin docs/19-git-revert-troubleshooting 
+Enumerating objects: 104, done.
+Counting objects: 100% (104/104), done.
+Delta compression using up to 2 threads
+Compressing objects: 100% (86/86), done.
+Writing objects: 100% (104/104), 534.51 KiB | 10.48 MiB/s, done.
+Total 104 (delta 27), reused 3 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (27/27), done.
+remote: 
+remote: Create a pull request for 'docs/19-git-revert-troubleshooting' on GitHub by visiting:
+remote:      https://github.com/git-workflow/b2-2/pull/new/docs/19-git-revert-troubleshooting
+remote: 
+To https://github.com/git-workflow/b2-2
+ * [new branch]      docs/19-git-revert-troubleshooting -> docs/19-git-revert-troubleshooting
+@hkk-cody ➜ /workspaces/b2-2 (docs/19-git-revert-troubleshooting) $ git log --oneline -1
+3f6c4c5 (HEAD -> docs/19-git-revert-troubleshooting, origin/docs/19-git-revert-troubleshooting) docs: add initial test file with placeholder content
+```
+#### 잘못된 commit을 취소하기 위해 revert
+![revert](../images/troubleshooting-c/revert.png)
+
+#### revert 후 git log 
+```
+@hkk-cody ➜ /workspaces/b2-2 (docs/19-git-revert-troubleshooting) $ git log --oneline -2
+34c571b (HEAD -> docs/19-git-revert-troubleshooting) Revert "docs: add initial test file with placeholder content"
+3f6c4c5 (origin/docs/19-git-revert-troubleshooting) docs: add initial test file with placeholder content
+```
+
+### 결과
+* push한 commit을 다른 내용으로 바꾸고 싶을 때 `git revert`를 사용하면 히스토리도 유지가 되면서 내용을 바꿀 수 있습니다.
+* 하지만 마지막 commit이 아닌 중간 commit을 바꾸면 충돌이 날 수 있기 때문에 주의해야 합니다.
+
+
 ## 시나리오: `git stash`, `git stash pop`
 
 * branch가 main이 아닌 다른 branch에서 분기해서 문제가 생겼다.
